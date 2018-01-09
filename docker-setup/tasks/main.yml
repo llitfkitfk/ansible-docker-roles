@@ -1,0 +1,23 @@
+---
+- import_tasks: setup-RedHat.yml
+  when: ansible_os_family == 'RedHat'
+
+- import_tasks: setup-Debian.yml
+  when: ansible_os_family == 'Debian'
+
+- name: Install Docker
+  package: 
+    name: '{{ docker_package }}'
+    state: '{{ docker_package_state }}'
+
+- name: Ensure Docker is started and enabled at boot
+  systemd:
+    state: started
+    enabled: yes
+    name: docker
+
+- import_tasks: setup-Compose.yml
+  when: docker_install_compose
+
+- import_tasks: setup-Docker-py.yml
+  when: docker_install_docker_py

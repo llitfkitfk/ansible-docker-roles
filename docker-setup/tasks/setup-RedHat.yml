@@ -1,0 +1,30 @@
+---
+- name: Uninstall old versions of Docker
+  package:
+    name: '{{ item }}'
+    state: absent
+  with_items:
+    - docker
+    - docker-common
+    - docker-engine
+  
+- name: Install required packages
+  package:
+    name: '{{ item }}'
+    state: present
+  with_items:
+    - yum-utils
+    - device-mapper-persistent-data
+    - lvm2
+
+- name: Add Docker repository
+  command: yum-config-manager --add-repo {{ docker_yum_repo_url }}
+  changed_when: False
+
+- name: Configure Docker edge repository
+  command: yum-config-manager --enable {{ docker_package }}-edge
+  when: docker_yum_repo_enable_edge
+
+- name: Configure Docker test repository
+  command: yum-config-manager --enable {{ docker_package }}-test
+  when: docker_yum_repo_enable_test  
