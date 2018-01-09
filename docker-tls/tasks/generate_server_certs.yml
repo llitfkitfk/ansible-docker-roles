@@ -1,0 +1,46 @@
+---
+
+- name: Create server key
+  command: openssl genrsa -out {{ docker_tls_temp_path }}/server-key.pem 4096
+
+- name: Create the server CSR 
+  command: "openssl req -subj '/CN={{ ansible_hostname }}' -sha256 -new -key {{ docker_tls_temp_path }}/server-key.pem -out {{ docker_tls_temp_path }}/server.csr"
+
+- name: Remove extfile
+  file:
+    state: absent
+    path: "{{ docker_tls_extfile }}" 
+
+- name: Create extfile
+  file:
+    state: touch 
+    path: "{{ docker_tls_extfile }}" 
+
+- name: Add alt name to extfile
+  lineinfile:
+    dest: "{{ docker_tls_extfile }}" 
+    line: "subjectAltName = DNS:{{ ansible_hostname }},IP:10.10.10.20,IP:127.0.0.1"
+
+- name: Create the server certificate 
+  command: "openssl x509 -req -days 365 -sha256 -in {{ docker_tls_temp_path }}/server.csr -CA {{ docker_tls_temp_path }}/ca.pem -CAkey {{ docker_tls_temp_path }}/ca-key.pem -CAcreateserial -out {{ docker_tls_temp_path }}/server-cert.pem -extfile {{ docker_tls_temp_path }}/extfile.cnf -passin file:{{ docker_tls_passphrase_file }}"
+
+- name: Check that the server cert path exists
+  file:
+    state: directory
+    path: "{{ docker_tls_server_cert_path }}"
+
+- name: Copy server certs
+  command: cp "{{ docker_tls_temp_path }}/{{ item }}" "{{ docker_tls_server_cert_path }}/."
+  with_items:
+    - ca.pem
+    - server-cert.pem
+    - server-key.pem
+
+- name: Set file permissions 
+  file:
+    path: "{{ docker_tls_server_cert_path }}/{{ item }}"
+    mode: 0400
+  with_items:
+    - ca.pem
+    - server-cert.pem
+    - server-key.pem

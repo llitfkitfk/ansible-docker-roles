@@ -1,0 +1,56 @@
+---
+
+- name: Create a tempdir
+  file:
+    state: directory
+    path: "{{ docker_tls_temp_path }}" 
+
+- name: Remove passphrase file, if it exists
+  file:
+    state: absent
+    path: "{{ docker_tls_passphrase_file }}" 
+
+- name: Create passphrase file
+  file:
+    state: touch
+    path: "{{ docker_tls_passphrase_file }}" 
+
+- name: Add passphrase to the file
+  lineinfile:
+    dest: "{{ docker_tls_passphrase_file }}"
+    line: "{{ docker_tls_passphrase }}" 
+
+- name: Generate ca-key.pem
+  command: "openssl genrsa -aes256 -passout file:{{ docker_tls_passphrase_file }} -out {{ docker_tls_temp_path }}/ca-key.pem 4096"
+
+- name: Generate ca certificate   
+  command: "openssl req -new -x509 -days 365 -key {{ docker_tls_temp_path }}/ca-key.pem -sha256 -out {{ docker_tls_temp_path }}/ca.pem -passin file:{{ docker_tls_passphrase_file }} -subj '/C={{ docker_tls_country }}/ST={{ docker_tls_state }}>/L={{ docker_tls_locality }}/O={{ docker_tls_organization }}/CN={{ ansible_hostname }}'"
+
+- import_tasks: generate_server_certs.yml
+
+- import_tasks: generate_client_certs.yml
+
+- name: Remove the temp directory
+  file:
+    state: absent
+    path: "{{ docker_tls_temp_path }}"
+
+- name: Install shell script for setting DOCKER env vars
+  template:
+    src: "{{ role_path }}/templates/docker_env.j2"
+    dest: "{{ docker_tls_env_shell_path }}/docker_env.sh"
+    mode: 0755
+  when: docker_tls_install_shell
+
+
+
+# configure docker deamon json file
+- name: configure docker daemon.json
+  template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    mode: 0400
+    owner: root
+  notify: restart docker
+  tags:
+    - docker_daemon_reload

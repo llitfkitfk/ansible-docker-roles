@@ -1,0 +1,5 @@
+#!/bin/bash
+
+export DOCKER_TLS_VERIFY=1
+export DOCKER_HOST=tcp://{{ ansible_hostname }}:2376
+export DOCKER_CERT_PATH={{ docker_tls_client_cert_path }}

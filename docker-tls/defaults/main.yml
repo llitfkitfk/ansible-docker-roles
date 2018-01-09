@@ -1,0 +1,39 @@
+---
+
+docker_tls_system_tmp: /tmp
+docker_tls_temp_path: "{{ docker_tls_system_tmp }}/docker-tls"
+docker_tls_country: CN
+docker_tls_state: GuangDong
+docker_tls_locality: Zhuhai
+docker_tls_organization: Wiz
+
+docker_tls_passphrase_file: "{{ docker_tls_temp_path }}/passphrase.txt"
+docker_tls_passphrase: CZPWXgmqqY8UR9WeduMH
+
+docker_tls_extfile: "{{ docker_tls_temp_path }}/extfile.cnf"
+docker_tls_server_cert_path: /etc/docker
+docker_tls_client_cert_path: ~/.docker
+
+docker_tls_env_shell_path: "~"
+docker_tls_install_shell: True
+docker_tls_restart_docker: False
+
+
+docker_config_hosts:
+  - "tcp://0.0.0.0:2376"
+  - "unix:///var/run/docker.sock"
+docker_config_debug: false
+
+# ==============================================================================
+# dictionary of common configuration options  ----------------------------------
+# ==============================================================================
+docker_config_common:
+  "debug": "{{ docker_config_debug }}"
+  "hosts": "{{ docker_config_hosts }}"
+  "tls": true
+  "tlsverify": true
+  "tlscacert": "{{ docker_tls_server_cert_path }}/ca.pem"
+  "tlscert": "{{ docker_tls_server_cert_path }}/server-cert.pem"
+  "tlskey": "{{ docker_tls_server_cert_path }}/server-key.pem"
+
+docker_config_custom: {}

@@ -1,0 +1,45 @@
+---
+- name: Create client key
+  command: "openssl genrsa -out {{ docker_tls_temp_path }}/key.pem 4096"
+
+- name: Create client CSR 
+  command: "openssl req -subj '/CN=client' -new -key {{ docker_tls_temp_path}}/key.pem -out {{ docker_tls_temp_path }}/client.csr"
+
+- name: Remove extfile
+  file:
+    state: absent
+    path: "{{ docker_tls_extfile }}"
+
+- name: Create extfile
+  file:
+    state: touch
+    path: "{{ docker_tls_extfile }}"
+
+- name: Add extendedKeyUsage to extfile
+  lineinfile:
+    dest: "{{ docker_tls_extfile }}"
+    line: "extendedKeyUsage = clientAuth"
+
+- name: Create the client certificate 
+  command: "openssl x509 -req -days 365 -sha256 -in {{ docker_tls_temp_path }}/client.csr -CA {{ docker_tls_temp_path }}/ca.pem -CAkey {{ docker_tls_temp_path }}/ca-key.pem -CAcreateserial -out {{ docker_tls_temp_path }}/cert.pem -extfile {{ docker_tls_extfile }} -passin file:{{ docker_tls_passphrase_file }}"
+
+- name: Check that the client cert path exists
+  file:
+    state: directory
+    path: "{{ docker_tls_client_cert_path }}"
+
+- name: Copy client certs
+  command: cp "{{ docker_tls_temp_path }}/{{ item }}" "{{ docker_tls_client_cert_path }}/."
+  with_items:
+    - ca.pem
+    - cert.pem
+    - key.pem
+
+- name: Set file permissions 
+  file:
+    path: "{{ docker_tls_client_cert_path }}/{{ item }}"
+    mode: 0444
+  with_items:
+    - ca.pem
+    - cert.pem
+    - key.pem
