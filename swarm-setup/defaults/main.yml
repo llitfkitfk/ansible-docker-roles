@@ -1,0 +1,11 @@
+---
+
+# You can set any interface, that is listened by docker engine.
+docker_swarm_interface: "{{ ansible_default_ipv4['interface'] }}"
+docker_swarm_addr: "{{ hostvars[inventory_hostname]['ansible_' + docker_swarm_interface]['ipv4']['address'] }}"
+docker_swarm_port: 2377
+
+
+# update swarm labels
+docker_update_swarm_labels: True
+docker_remove_other_swarm_labels: False
